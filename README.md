@@ -28,18 +28,18 @@ Microsoft.AspNetCore.Hosting.Abstractions
 
 ## Installation
 
-```cs
+```console
 dotnet tool install -g package-usage
 ```
 
 ## Usage
 Navigate to a directory with your solution, then
 
-```
+```console
 package-usage [--only-different]
 ```
 or
-```
+```console
 package-usage MySolution.sln [--only-different]
 ```
 
