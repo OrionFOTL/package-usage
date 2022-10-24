@@ -29,7 +29,7 @@ Microsoft.AspNetCore.Hosting.Abstractions
 ## Installation
 
 ```console
-dotnet tool install -g package-usage
+dotnet tool install -g PackageUsage
 ```
 
 ## Usage
