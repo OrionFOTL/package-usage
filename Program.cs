@@ -1,3 +1,6 @@
+using CliWrap;
+using CliWrap.Buffered;
+
 namespace PackageUsage;
 
 public class Program
@@ -5,19 +8,19 @@ public class Program
     public const string CommandName = "package-usage";
     public const string OnlyDifferentPacksSwitch = "--only-different";
 
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         _ = args switch
         {
             ["-h", ..]                    => PrintUsage(),
-            []                            => PrintPackages(),
-            [OnlyDifferentPacksSwitch]    => PrintPackages(null, true),
-            [_, OnlyDifferentPacksSwitch] => PrintPackages(args[0], true),
+            []                            => await PrintPackages(),
+            [OnlyDifferentPacksSwitch]    => await PrintPackages(null, true),
+            [_, OnlyDifferentPacksSwitch] => await PrintPackages(args[0], true),
             _                             => PrintUsage(),
         };
     }
 
-    private static object? PrintPackages(string? solutionPath = null, bool onlyDifferent = false)
+    private static async Task<object?> PrintPackages(string? solutionPath = null, bool onlyDifferent = false)
     {
         if (solutionPath is null)
         {
@@ -37,7 +40,7 @@ public class Program
             solutionPath = solutions.First().FullName;
         }
 
-        List<string> dotnetListOutput = GetDotnetOutput(solutionPath);
+        List<string> dotnetListOutput = await GetDotnetOutputAsync(solutionPath);
         List<PackageInfo> projectPacks = GetPackageList(dotnetListOutput);
 
         var groups = projectPacks.OrderBy(pack => pack.Name)
@@ -107,25 +110,45 @@ public class Program
         return projectPacks;
     }
 
-    private static List<string> GetDotnetOutput(string solutionPath)
+    private static async Task<List<string>> GetDotnetOutputAsync(string solutionPath)
     {
-        var outputLines = new List<string>();
+        var processResultTask = Cli
+            .Wrap("dotnet")
+            .WithArguments(new[] { "list", solutionPath, "package" })
+            .ExecuteBufferedAsync();
 
-        using var process = new System.Diagnostics.Process
+        Console.CursorVisible = false;
+
+        foreach (var symbol in LoadingSymbols())
         {
-            StartInfo = new System.Diagnostics.ProcessStartInfo
+            if (processResultTask.Task.IsCompleted)
             {
-                FileName = "dotnet",
-                ArgumentList = { "list", solutionPath, "package" },
-                RedirectStandardOutput = true,
+                break;
             }
-        };
-        process.OutputDataReceived += (_, args) => outputLines.Add(args.Data!);
-        process.Start();
-        process.BeginOutputReadLine();
-        process.WaitForExit();
+
+            Console.Write(symbol);
+            Console.CursorLeft = 0;
+            await Task.Delay(200);
+        }
+
+        Console.CursorVisible = true;
+
+        var processResult = await processResultTask;
+
+        var outputLines = processResult.StandardOutput.Split(Environment.NewLine).ToList();
 
         return outputLines;
+    }
+
+    private static IEnumerable<char> LoadingSymbols()
+    {
+        while (true)
+        {
+            yield return '/';
+            yield return '-';
+            yield return '\\';
+            yield return '|';
+        }
     }
 }
 
