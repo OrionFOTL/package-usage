@@ -15,6 +15,7 @@ public class Program
             ["-h", ..]                    => PrintUsage(),
             []                            => await PrintPackages(),
             [OnlyDifferentPacksSwitch]    => await PrintPackages(null, true),
+            [_]                           => await PrintPackages(args[0]),
             [_, OnlyDifferentPacksSwitch] => await PrintPackages(args[0], true),
             _                             => PrintUsage(),
         };
